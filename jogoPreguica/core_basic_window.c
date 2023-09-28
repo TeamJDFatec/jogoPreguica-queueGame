@@ -14,6 +14,8 @@
 #define OUROS_IMG "ouros.png"
 #define COPAS_IMG "copas.png"
 
+#define PONTOS_POR_FILA 10
+
 const char *NAIPES_IMG[4] = {"img/ouros.png", "img/espada.png", "img/copas.png", "img/zap.png"};
 
 typedef struct
@@ -430,6 +432,41 @@ int winGame(No **filaBaralho, No **fila1, No **fila2, No **fila3, No **fila4, No
     return 1;
 }
 
+int pontuacao(No **filaBaralho, No **fila1, No **fila2, No **fila3, No **fila4, No **fila5, int *passou1, int *passou2, int *passou3, int *passou4, int *passou5) {
+    No *auxBaralho = *filaBaralho;
+    No *aux1 = *fila1;
+    No *aux2 = *fila2;
+    No *aux3 = *fila3;
+    No *aux4 = *fila4;
+    No *aux5 = *fila5;
+    No *lista[6] = {auxBaralho, aux1, aux2, aux3, aux4, aux5};
+
+    int tamanho_fila_baralho = 0;
+    int tamanho_fila1 = 0;
+    int tamanho_fila2 = 0;
+    int tamanho_fila3 = 0;
+    int tamanho_fila4 = 0;
+    int tamanho_fila5 = 0;
+    int listaTam[6] = {tamanho_fila_baralho, tamanho_fila1, tamanho_fila2, tamanho_fila3, tamanho_fila4, tamanho_fila5};
+
+    int pontos = 0;
+
+    for(int i = 0; i < 6; i++) {
+        while(lista[i]) {
+            listaTam[i]++;
+            lista[i] = lista[i]->proximo;
+        }
+    }
+
+    for(int i = 0; i < 6; i++) {
+        if(listaTam[i] == 13) {
+            pontos++;
+        }
+    }
+
+    return pontos;
+}
+
 void criaTexturaNaipes(Texture2D naipesTextura[])
 {
 
@@ -456,6 +493,8 @@ void pausarJogo()
 Baralho *pegaBaralhoPorPosicao(Baralho baralhosPossiveis[], int posX, int posY)
 {
 
+    printf("posX = %d, posY = %d", posX, posY);
+
     Rectangle areaBaralho;
 
     for (int i = 0; i < 6; i++)
@@ -465,125 +504,17 @@ Baralho *pegaBaralhoPorPosicao(Baralho baralhosPossiveis[], int posX, int posY)
 
         if(CheckCollisionPointRec(ponto, areaBaralho))
         {
+            printf("RETORNOU\n");
+            printf("baralho id = %d", baralhosPossiveis[i].numero);
             return &baralhosPossiveis[i];
         }
+
+
     }
+
+    printf("É NULO");
 
     return NULL;
-}
-
-void textInput()
-{
-    int MAX_INPUT_CHARS = 1;
-
-    //--------------------------------------------------------------------------------------
-    const int screenWidth = GetMonitorWidth(0);
-    const int screenHeight = GetMonitorHeight(0);
-
-    char name[1 + 1] = "\0";      // NOTE: One extra space required for null terminator char '\0'
-    int letterCount = 0;
-
-    Rectangle box = {screenWidth/2.0f - 180, screenHeight/2.0f - 150, 410, 210};
-    Rectangle textBox = { screenWidth/2.0f - 100, screenHeight/2.0f - 70, 225, 50 };
-    bool mouseOnText = false;
-
-    int framesCounter = 0;
-
-    //--------------------------------------------------------------------------------------
-
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        if (CheckCollisionPointRec(GetMousePosition(), textBox)) mouseOnText = true;
-        else mouseOnText = false;
-
-        if (mouseOnText)
-        {
-            // Set the window's cursor to the I-Beam
-            SetMouseCursor(MOUSE_CURSOR_IBEAM);
-
-            // Get char pressed (unicode character) on the queue
-            int key = GetCharPressed();
-
-            // Check if more characters have been pressed on the same frame
-            while (key > 0)
-            {
-                // NOTE: Only allow keys in range [32..125]
-                if ((key >= 32) && (key <= 125) && (letterCount < MAX_INPUT_CHARS))
-                {
-                    name[letterCount] = (char)key;
-                    name[letterCount+1] = '\0'; // Add null terminator at the end of the string.
-                    letterCount++;
-                }
-
-                key = GetCharPressed();  // Check next character in the queue
-            }
-
-            if (IsKeyPressed(KEY_BACKSPACE))
-            {
-                letterCount--;
-                if (letterCount < 0) letterCount = 0;
-                name[letterCount] = '\0';
-            }
-        }
-        else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-
-        if (mouseOnText) framesCounter++;
-        else framesCounter = 0;
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
-
-            //ClearBackground(RAYWHITE);
-
-            DrawRectangleRec(box, WHITE);
-            DrawText("DESEJA REALMENTE SAIR? (S/N)", screenWidth/2.0f - 150, screenHeight/2.0f - 120, 20, BLACK);
-
-            DrawRectangleRec(textBox, LIGHTGRAY);
-            if (mouseOnText) DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, RED);
-            else DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, DARKGRAY);
-
-            DrawText(name, (int)textBox.x + 5, (int)textBox.y + 8, 40, MAROON);
-
-            DrawText("Pressione enter para confirmar", screenWidth/2.0f - 150, screenHeight/2.0f - 5, 20, RED);
-
-            if (mouseOnText)
-            {
-                if (letterCount < MAX_INPUT_CHARS)
-                {
-                    // Draw blinking underscore char
-                    if (((framesCounter/20)%2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(name, 40), (int)textBox.y + 12, 40, MAROON);
-                }
-                //else DrawText("Press BACKSPACE to delete chars...", 230, 300, 20, GRAY);
-            }
-
-
-        EndDrawing();
-        //----------------------------------------------------------------------------------
-    }
-
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    //CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
-
-    return 0;
-}
-
-// Check if any key is pressed
-// NOTE: We limit keys check to keys between 32 (KEY_SPACE) and 126
-bool IsAnyKeyPressed()
-{
-    bool keyPressed = false;
-    int key = GetKeyPressed();
-
-    if ((key >= 32) && (key <= 126)) keyPressed = true;
-
-    return keyPressed;
 }
 
 void jogo()
@@ -591,12 +522,12 @@ void jogo()
 
     Baralho baralhosPossiveis[6] = {
 
-        (Baralho){0, 25, 25},
-        (Baralho){1, 25, 300},
-        (Baralho){2, 325, 300},
-        (Baralho){3, 625, 300},
-        (Baralho){4, 925, 300},
-        (Baralho){5, 1225, 300}
+        (Baralho){0, 35, 25},
+        (Baralho){1, 35, 300},
+        (Baralho){2, 335, 300},
+        (Baralho){3, 635, 300},
+        (Baralho){4, 935, 300},
+        (Baralho){5, 1235, 300}
     };
 
 
@@ -607,12 +538,19 @@ void jogo()
     Texture2D logo = LoadTexture("logo100.png");
     criaTexturaNaipes(naipesTextura);
 
-    char *resposta;
-
     bool jogando = true, pausado = false, movendoCarta = false;
     bool emGameOver = false;
     bool ganhou = false;
+    bool exibeMensagemErro = false;
     int baralhoVazio = TAMANHO_BARALHO;
+
+    //pontuacao
+    int pontosTotais = 0;
+    int passou1 = 0;
+    int passou2 = 0;
+    int passou3 = 0;
+    int passou4 = 0;
+    int passou5 = 0;
 
     Carta baralho[TAMANHO_BARALHO];
     organizarBaralho(baralho);
@@ -626,18 +564,8 @@ void jogo()
     No* fila4 = NULL;
     No* fila5 = NULL;
 
-    while (jogando)
+    while (!WindowShouldClose())
     {
-
-
-        if(WindowShouldClose())
-        {
-            textInput();
-            break;
-        }
-
-
-
 
         BeginDrawing();
 
@@ -647,6 +575,11 @@ void jogo()
             desenhaFundo();
             desenhaColunasCartas(naipesTextura, baralhosPossiveis);
 
+            DrawText(TextFormat("QTD Cartas restantes: %d", baralhoVazio), 650, 25, 40, BLACK); // EXIBE CARTAS RESTANTES
+
+            pontosTotais = pontuacao(&filaBaralho, &fila1, &fila2, &fila3, &fila4, &fila5, &passou1, &passou2, &passou3, &passou4, &passou5) * PONTOS_POR_FILA;
+            DrawText(TextFormat("Pontuacao: %d", pontosTotais), 1500, 25, 50, BLUE); // EXIBE PONTUAÇÃO
+
             imprimir_fila(&filaBaralho, naipesTextura, &baralhosPossiveis[0], &logo, 3, true);
 
             imprimir_fila(&fila1, naipesTextura, &baralhosPossiveis[1], NULL, 10, true);
@@ -655,11 +588,18 @@ void jogo()
             imprimir_fila(&fila4, naipesTextura, &baralhosPossiveis[4], NULL, 10, true);
             imprimir_fila(&fila5, naipesTextura, &baralhosPossiveis[5], NULL, 10, true);
 
+            if(exibeMensagemErro) {
+                DrawTextEx(LoadFont("fontes/PlatinumSignOver.ttf"), "MOVIMENTO INVALIDO", (Vector2){(GetMonitorWidth(0) / 2) - 600, (GetMonitorHeight(0) / 2)}, 50, 50, BLACK);
+
+                if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+                    exibeMensagemErro = false;
+            }
             if (ganhou)
             {
 
                 //DrawTextEx(LoadFont("fontes/PlatinumSignOver.ttf"), "GANHOU!", (Vector2){(GetMonitorWidth(0) / 2) - 600, (GetMonitorHeight(0) / 2) - 100}, 200, 50, BLACK);
-                DrawText("GANHOU!", (GetMonitorWidth(0) / 2) - 600, (GetMonitorHeight(0) / 2) - 100, 200, BLACK);
+                DrawText("GANHOU!", (GetMonitorWidth(0) / 2) - 600, (GetMonitorHeight(0) / 2) - 100, 200, RED);
+
 
                 if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                     break;
@@ -669,6 +609,7 @@ void jogo()
 
                 //DrawTextEx(LoadFont("fontes/PlatinumSignOver.ttf"), "GAME OVER!", (Vector2){(GetMonitorWidth(0) / 2) - 600, (GetMonitorHeight(0) / 2) - 100}, 200, 50, BLACK);
                 DrawText("GAME OVER!", (GetMonitorWidth(0) / 2) - 600, (GetMonitorHeight(0) / 2) - 100, 200, RED);
+
 
                 if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                     break;
@@ -737,7 +678,7 @@ void jogo()
                                         case 3: moverCarta(&filaBaralho, &fila3) == 1 ? baralhoVazio-- : 0; break;
                                         case 4: moverCarta(&filaBaralho, &fila4) == 1 ? baralhoVazio-- : 0; break;
                                         case 5: moverCarta(&filaBaralho, &fila5) == 1 ? baralhoVazio-- : 0; break;
-                                        default: DrawText("Movimento invalido!", 100, 100, 100, RED); break;
+                                        default: exibeMensagemErro = true; break;
                                     }
                                 break;
                                 case 1:
@@ -747,7 +688,7 @@ void jogo()
                                         case 3: moverCarta(&fila1, &fila3); break;
                                         case 4: moverCarta(&fila1, &fila4); break;
                                         case 5: moverCarta(&fila1, &fila5); break;
-                                        default: DrawText("Movimento invalido!", 100, 100, 100, RED); break;
+                                        default: exibeMensagemErro = true; break;
                                     }
                                     break;
                                     case 2:
@@ -757,7 +698,7 @@ void jogo()
                                             case 3: moverCarta(&fila2, &fila3); break;
                                             case 4: moverCarta(&fila2, &fila4); break;
                                             case 5: moverCarta(&fila2, &fila5); break;
-                                            default: DrawText("Movimento invalido!", 100, 100, 100, RED); break;
+                                            default: exibeMensagemErro = true; break;
                                         }
                                         break;
                                         case 3:
@@ -767,7 +708,7 @@ void jogo()
                                                 case 2: moverCarta(&fila3, &fila2); break;
                                                 case 4: moverCarta(&fila3, &fila4); break;
                                                 case 5: moverCarta(&fila3, &fila5); break;
-                                                default: DrawText("Movimento invalido!", 100, 100, 100, RED); break;
+                                                default: exibeMensagemErro = true; break;
                                             }
                                             break;
                                             case 4:
@@ -777,7 +718,7 @@ void jogo()
                                                     case 2: moverCarta(&fila4, &fila2); break;
                                                     case 3: moverCarta(&fila4, &fila3); break;
                                                     case 5: moverCarta(&fila4, &fila5); break;
-                                                    default: DrawText("Movimento invalido!", 100, 100, 100, RED); break;
+                                                    default: exibeMensagemErro = true; break;
                                                 }
                                                 break;
                                                 case 5:
@@ -787,11 +728,11 @@ void jogo()
                                                         case 2: moverCarta(&fila5, &fila2); break;
                                                         case 3: moverCarta(&fila5, &fila3); break;
                                                         case 4: moverCarta(&fila5, &fila4); break;
-                                                        default: DrawText("Movimento invalido!", 100, 100, 100, RED); break;
+                                                        default: exibeMensagemErro = true; break;
                                                     }
                                                     break;
                                     default:
-                                        DrawText("Fila de origem invalida!", 100, 100, 100, RED); break;
+                                        exibeMensagemErro = true; break;
                                 }
                     }
 
@@ -821,9 +762,6 @@ int main()
 
     SetTraceLogLevel(LOG_ERROR);
 
-    //Image logo = LoadImage("img/logo100.png");
-
-    //SetWindowIcon(logo);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(1500, 800, "Preguica");
     MaximizeWindow();
@@ -837,8 +775,6 @@ int main()
         jogo();
 
     //} while(true);
-
-    //UnloadImage(logo);
 
 
     return 0;
